@@ -1,0 +1,15 @@
+I need you to evaluate the quality of a roof based on the following criteria. Please provide a score for each criterion (on a scale of 1 to 10). Then, calculate an overall rating by averaging the individual scores. The criteria are:
+
+Structural Condition (Durability): Assess the roof's structural integrity. Look for signs of damage, wear and tear, or sagging.
+
+Cleanliness and Maintenance: Is the roof clean and well-maintained? Are there signs of neglect, debris, or moss growth?
+
+Material Quality: Evaluate the quality of the roofing materials. Are the materials durable, appropriate for the environment, and in good condition?
+
+Aesthetics (Appearance): Rate the visual appeal of the roof, considering alignment, symmetry, and overall neatness.
+
+Functionality: Assess whether the roof fulfills its primary purpose (e.g., effective drainage, insulation, and water resistance). Look for issues such as leaks or poor drainage.
+
+Suitability for Specific Purpose: If applicable, evaluate the roof's suitability for a particular task, such as solar panel installation. Consider orientation, slope, and shading from surrounding structures or vegetation.
+
+Once you have provided individual scores, give an overall rating by averaging the scores.No need to provide any justification.
