@@ -21,6 +21,12 @@ blob_sas_token = os.getenv("BLOB_SAS_KEY")
 openai_key = os.getenv("OPENAI_API_KEY")
 maps_api_key = os.getenv("MAPS_API_KEY")
 
+with open ("prompt.txt", "r") as prompt:
+    prompt = prompt.read()
+
+
+
+
 # Load your YOLO model
 model = YOLO("src/model/best.pt")  # Replace with your YOLO model path
 
@@ -54,13 +60,19 @@ if address:
         st.write("Processing image with YOLO model...")
         annotated_image, labels, resized_image, predictions = predict(map_image, model)
 
-        # Show results
-        st.image(annotated_image, caption="Annotated Image", use_column_width=True)
-        # st.image(resized_image, caption="Resized Image", use_column_width=True)
+       
 
         # Crop the image
         cropped_image = crop_to_closest_roof(map_image, predictions)
-        st.image(cropped_image, caption="Cropped Image", use_column_width=True)
+
+        # Show results
+        col1, col2 = st.columns(2)
+
+        # Display annotated image
+        col1.image(annotated_image, caption="Annotated Image", use_container_width=True)
+        # Display cropped image
+        col2.image(cropped_image, caption="Cropped Image", use_container_width=True)
+        
         cropped_image_sas_url = f"{base_sas_url}cropped/{address}.png?{blob_sas_token}"
         annotated_image_sas_url = (
             f"{base_sas_url}annotated/{address}.png?{blob_sas_token}"
@@ -98,20 +110,13 @@ if address:
             labels_io.getvalue().encode(), labels_sas_url, content_type="text/plain"
         )
 
-        # # Display labels
-        # st.write("Detected Labels:")
-        # for label in labels:
-        #     st.write(label)
 
-        # Generate and display scores
-        st.write("Generating scores...")
-        prompt = f"Analyze this image based on the address: {address}"
         response = generate_chat_completion(prompt, cropped_image_path, openai_key)
 
         # Parse and display the response
         string = response.choices[0].message.content
-        st.write("Response from OpenAI:")
-        st.text(string)
+        st.title("Rating:")
+        st.header(string)
 
     else:
         st.error(
