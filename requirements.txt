@@ -10,6 +10,7 @@ certifi==2024.8.30
 cffi==1.17.1
 charset-normalizer==3.4.0
 click==8.1.8
+cmake==3.31.2
 contourpy==1.3.0
 cryptography==44.0.0
 cycler==0.12.1

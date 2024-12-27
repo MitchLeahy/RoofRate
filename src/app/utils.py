@@ -1,15 +1,9 @@
 from azure.storage.blob import BlobClient, ContentSettings, BlobServiceClient
 from PIL import Image
-import io
 import numpy as np
 from ultralytics import YOLO
 import matplotlib.pyplot as plt
-import base64
 from openai import OpenAI
-import os
-import re
-import pandas as pd
-import requests
 from io import BytesIO
 
 
