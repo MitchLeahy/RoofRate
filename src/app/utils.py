@@ -33,7 +33,7 @@ def upload_blob_from_memory(data, sas_url, content_type="image/png"):
     return blob_client.url
 
 
-def predict(image, model):
+def yolo_detect(image, model):
     """
     Process the given image with the YOLO model, annotate predictions, and generate labels.
 

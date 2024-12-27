@@ -4,7 +4,7 @@ from PIL import Image
 import os
 import requests
 from src.app.utils import (
-    predict,
+    yolo_detect,
     crop_to_closest_roof,
     generate_chat_completion,
     upload_blob_from_memory,
@@ -55,7 +55,7 @@ if address:
 
         # Run the prediction
         st.write("Processing image with YOLO model...")
-        annotated_image, labels, resized_image, predictions = predict(map_image, model)
+        annotated_image, labels, resized_image, predictions = yolo_detect(map_image, model)
 
        
 
