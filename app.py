@@ -24,9 +24,6 @@ maps_api_key = os.getenv("MAPS_API_KEY")
 with open ("prompt.txt", "r") as prompt:
     prompt = prompt.read()
 
-
-
-
 # Load your YOLO model
 model = YOLO("src/model/best.pt")  # Replace with your YOLO model path
 
@@ -115,7 +112,7 @@ if address:
 
         # Parse and display the response
         string = response.choices[0].message.content
-        st.title("Rating:")
+        st.title("Rating: ")
         st.header(string)
 
     else:
