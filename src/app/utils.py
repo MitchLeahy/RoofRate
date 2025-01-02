@@ -1,7 +1,6 @@
 from azure.storage.blob import BlobClient, ContentSettings, BlobServiceClient
 from PIL import Image
 import numpy as np
-from ultralytics import YOLO
 import matplotlib.pyplot as plt
 from openai import OpenAI
 from io import BytesIO
