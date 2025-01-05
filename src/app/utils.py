@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from openai import OpenAI
 from io import BytesIO
-
+from PIL import Image, ImageDraw, ImageFont
 
 def upload_blob_from_memory(data, sas_url, content_type="image/png"):
     """
@@ -65,15 +65,17 @@ def yolo_detect(image, model):
 
     return annotated_image, labels, resized_image, predictions
 
-
 def crop_to_closest_roof(image, predictions):
     """
     Crops a PIL image to the bounding box closest to the center of the image based on given predictions.
 
     Args:
     - image (PIL.Image): The source image.
-    - predictions (list of lists): List of bounding boxes in the format [x1, y1, x2, y2, ...].
-      Additional fields like confidence or class label may also be present.
+    - predictions (list of dicts): List of predictions, where each dict contains:
+        - x: Center x-coordinate of the bounding box.
+        - y: Center y-coordinate of the bounding box.
+        - width: Width of the bounding box.
+        - height: Height of the bounding box.
 
     Returns:
     - PIL.Image: Cropped image.
@@ -88,10 +90,18 @@ def crop_to_closest_roof(image, predictions):
     # Calculate distances to the image center for all bounding boxes
     distances = []
     for prediction in predictions:
-        # Extract only the bounding box coordinates
-        print(prediction)
-        x1, y1, x2, y2 = prediction[:4]
-        box_center = ((x1 + x2) / 2, (y1 + y2) / 2)  # Center of the bounding box
+        # Extract bounding box details
+        box_center = (prediction["x"], prediction["y"])
+        box_width = prediction["width"]
+        box_height = prediction["height"]
+
+        # Convert center coordinates and dimensions to corner coordinates
+        x1 = box_center[0] - box_width / 2
+        y1 = box_center[1] - box_height / 2
+        x2 = box_center[0] + box_width / 2
+        y2 = box_center[1] + box_height / 2
+
+        # Calculate the distance of the bounding box center from the image center
         distance = np.sqrt(
             (box_center[0] - image_center[0]) ** 2
             + (box_center[1] - image_center[1]) ** 2
@@ -134,3 +144,82 @@ def generate_chat_completion(prompt, cropped_image_path, openai_api_key):
     )
 
     return response
+
+def draw_predictions(image, predictions):
+    """
+    Draw bounding boxes and labels on an image.
+
+    Args:
+        image (PIL.Image.Image): The input image.
+        predictions (list): A list of predictions, each with keys:
+                            - x: center x-coordinate of the bounding box
+                            - y: center y-coordinate of the bounding box
+                            - width: width of the bounding box
+                            - height: height of the bounding box
+                            - class: label of the detected object
+                            - confidence: confidence score of the detection
+
+    Returns:
+        PIL.Image.Image: The image with bounding boxes and labels drawn.
+    """
+    draw = ImageDraw.Draw(image)
+    font = ImageFont.load_default()  # Default font
+
+    for prediction in predictions:
+        # Extract prediction details
+        x, y = prediction["x"], prediction["y"]
+        width, height = prediction["width"], prediction["height"]
+        label = prediction["class"]
+        confidence = prediction["confidence"]
+
+        # Calculate bounding box coordinates
+        left = x - width / 2
+        top = y - height / 2
+        right = x + width / 2
+        bottom = y + height / 2
+
+        # Draw the bounding box
+        draw.rectangle([left, top, right, bottom], outline="red", width=3)
+
+        # Draw the label and confidence score
+        label_text = f"{label} ({confidence:.2f})"
+        
+        # Calculate text size using textbbox
+        text_bbox = draw.textbbox((0, 0), label_text, font=font)
+        text_width, text_height = text_bbox[2] - text_bbox[0], text_bbox[3] - text_bbox[1]
+        
+        # Draw a filled rectangle for the label background
+        draw.rectangle([left, top - text_height - 4, left + text_width, top], fill="red")
+        # Draw the label text
+        draw.text((left, top - text_height - 2), label_text, fill="white", font=font)
+
+    return image
+def create_yolov8_labels(json_data):
+    """
+    Creates a YOLOv8 labels file from predictions in the JSON object.
+
+    Args:
+        json_data (dict): JSON object containing predictions and image metadata.
+        output_path (str): Path to save the YOLOv8 labels file.
+
+    Returns:
+        None
+    """
+    # Extract predictions and image dimensions
+    predictions = json_data["predictions"]
+    image_width = 640
+    image_height = 640
+
+    # Prepare YOLOv8 label lines
+    yolo_labels = []
+    for prediction in predictions:
+        class_id = prediction["class_id"]
+        center_x = prediction["x"] / image_width
+        center_y = prediction["y"] / image_height
+        width = prediction["width"] / image_width
+        height = prediction["height"] / image_height
+
+        # Format: <class_id> <center_x> <center_y> <width> <height>
+        yolo_labels.append(f"{class_id} {center_x:.6f} {center_y:.6f} {width:.6f} {height:.6f}")
+
+    return yolo_labels
