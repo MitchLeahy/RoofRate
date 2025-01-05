@@ -52,6 +52,7 @@ if address:
     # Fetch the static map image
     response = requests.get(static_map_url, params=params)
 
+
     if response.status_code == 200:
         # Open the map image using PIL
         map_image_sas_url = f"{base_sas_url}resized/{address}.png?{blob_sas_token}"
@@ -74,66 +75,69 @@ if address:
         model = project.version(VERSION_ID).model
 
         results = model.predict(map_image_path, hosted=True).json()
-        labels = create_yolov8_labels(results)
-        predictions = results["predictions"]
-        annotated_image = draw_predictions(map_image, predictions)
+        if results['predictions'] != []:
+            labels = create_yolov8_labels(results)
+            predictions = results["predictions"]
+            annotated_image = draw_predictions(map_image, predictions)
 
 
-        # annotated_image, labels, resized_image, predictions = predict(map_image, model)
+            # annotated_image, labels, resized_image, predictions = predict(map_image, model)
 
-       
-
-        # # Crop the image
-        cropped_image = crop_to_closest_roof(map_image, predictions)
-
-        # # Show results
-        col1, col2 = st.columns(2)
-
-        # # Display annotated image
-        col1.image(annotated_image, caption="Annotated Image", use_container_width=True)
-        # # Display cropped image
-        col2.image(cropped_image, caption="Cropped Image", use_container_width=True)
-        
-        cropped_image_sas_url = f"{base_sas_url}cropped/{address}.png?{blob_sas_token}"
-        annotated_image_sas_url = (
-            f"{base_sas_url}annotated/{address}.png?{blob_sas_token}"
-        )
-        labels_sas_url = f"{base_sas_url}labels/{address}.txt?{blob_sas_token}"
         
 
-        # Save and upload annotated image
-        annotated_image_io = io.BytesIO()
-        annotated_image.save(annotated_image_io, format="PNG")
-        annotated_image_io.seek(0)
-        annotated_image_path = upload_blob_from_memory(
-            annotated_image_io.getvalue(), annotated_image_sas_url
-        )
+            # # Crop the image
+            cropped_image = crop_to_closest_roof(map_image, predictions)
 
-        # Save and upload resized image
-     
+            # # Show results
+            col1, col2 = st.columns(2)
 
-        # Save and upload cropped image
-        cropped_image_io = io.BytesIO()
-        cropped_image.save(cropped_image_io, format="PNG")
-        cropped_image_io.seek(0)
-        cropped_image_path = upload_blob_from_memory(
-            cropped_image_io.getvalue(), cropped_image_sas_url
-        )
-        st.write(labels)
-        # Save and upload labels
-        # labels_io = io.StringIO("\n".join(labels))
-        # labels_path = upload_blob_from_memory(
-        #     labels_io.getvalue().encode(), labels_sas_url, content_type="text/plain"
-        # )
+            # # Display annotated image
+            col1.image(annotated_image, caption="Annotated Image", use_container_width=True)
+            # # Display cropped image
+            col2.image(cropped_image, caption="Cropped Image", use_container_width=True)
+            
+            cropped_image_sas_url = f"{base_sas_url}cropped/{address}.png?{blob_sas_token}"
+            annotated_image_sas_url = (
+                f"{base_sas_url}annotated/{address}.png?{blob_sas_token}"
+            )
+            labels_sas_url = f"{base_sas_url}labels/{address}.txt?{blob_sas_token}"
+            
+
+            # Save and upload annotated image
+            annotated_image_io = io.BytesIO()
+            annotated_image.save(annotated_image_io, format="PNG")
+            annotated_image_io.seek(0)
+            annotated_image_path = upload_blob_from_memory(
+                annotated_image_io.getvalue(), annotated_image_sas_url
+            )
+
+            # Save and upload resized image
+        
+
+            # Save and upload cropped image
+            cropped_image_io = io.BytesIO()
+            cropped_image.save(cropped_image_io, format="PNG")
+            cropped_image_io.seek(0)
+            cropped_image_path = upload_blob_from_memory(
+                cropped_image_io.getvalue(), cropped_image_sas_url
+            )
+            st.write(labels)
+            labels_io = io.StringIO("\n".join(labels))
+            labels_path = upload_blob_from_memory(
+                labels_io.getvalue().encode(), labels_sas_url, content_type="text/plain"
+            )
 
 
 
-        # response = generate_chat_completion(prompt, cropped_image_path, openai_key)
+            response = generate_chat_completion(prompt, cropped_image_path, openai_key)
 
-        # # Parse and display the response
-        # string = response.choices[0].message.content
-        # st.title("Rating: ")
-        # st.header(string)
+            # # Parse and display the response
+            string = response.choices[0].message.content
+            st.title("Rating: ")
+            st.header(string)
+        else:
+            st.image(map_image, caption="Map Image", use_container_width=True)
+            st.error("No roofs detected in the image.")
 
     else:
         st.error(
