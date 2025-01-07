@@ -121,7 +121,6 @@ if address:
             cropped_image_path = upload_blob_from_memory(
                 cropped_image_io.getvalue(), cropped_image_sas_url
             )
-            st.write(labels)
             labels_io = io.StringIO("\n".join(labels))
             labels_path = upload_blob_from_memory(
                 labels_io.getvalue().encode(), labels_sas_url, content_type="text/plain"
