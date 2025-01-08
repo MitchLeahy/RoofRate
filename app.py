@@ -3,18 +3,22 @@ from dotenv import load_dotenv
 from PIL import Image
 import os
 import requests
+from io import StringIO
 from src.app.utils import (
     draw_predictions,
     crop_to_closest_roof,
     generate_chat_completion,
     upload_blob_from_memory,
-    create_yolov8_labels
+    create_yolov8_labels,
+    get_client_ip
 )
 
 from io import BytesIO
 from azure.storage.blob import BlobClient, ContentSettings, BlobServiceClient
 import io
 import roboflow
+from datetime import datetime
+import pandas as pd
 
 # Load environment variables
 load_dotenv()
@@ -24,8 +28,26 @@ openai_key = os.getenv("OPENAI_API_KEY")
 maps_api_key = os.getenv("MAPS_API_KEY")
 roboflow_api_key = os.getenv("ROBOFLOW_API_KEY")
 
+roof_table_sas_url = f"{base_sas_url}table/searchs.csv?{blob_sas_token}"
+map_image_path = ''
+annotated_image_path = ''
+cropped_image_path = ''
+labels_path = ''
+
+blob_client = BlobClient.from_blob_url(roof_table_sas_url)
+try:
+    # Read the blob's content
+    downloaded_blob = blob_client.download_blob().readall()
+    # Load it into a Pandas DataFrame
+    roof_df = pd.read_csv(StringIO(downloaded_blob.decode("utf-8")))
+except Exception as e:
+    raise ValueError(f"Failed to read CSV: {e}")
+
+
+
 with open ("prompt.txt", "r") as prompt:
     prompt = prompt.read()
+
 
 # Load your YOLO model
 # model = YOLO("src/model/best.pt")  # Replace with your YOLO model path
@@ -33,6 +55,7 @@ with open ("prompt.txt", "r") as prompt:
 # Streamlit app title
 st.title("Roof Rate")
 
+user_ip = get_client_ip()
 # Address input
 address = st.text_input("Enter the address:")
 
@@ -56,6 +79,12 @@ if address:
     if response.status_code == 200:
         # Open the map image using PIL
         map_image_sas_url = f"{base_sas_url}resized/{address}.png?{blob_sas_token}"
+        cropped_image_sas_url = f"{base_sas_url}cropped/{address}.png?{blob_sas_token}"
+        annotated_image_sas_url = (
+            f"{base_sas_url}annotated/{address}.png?{blob_sas_token}"
+        )
+        labels_sas_url = f"{base_sas_url}labels/{address}.txt?{blob_sas_token}"
+
         map_image = Image.open(BytesIO(response.content))
         map_image_io = io.BytesIO()
         map_image.save(map_image_io, format="PNG")
@@ -95,12 +124,8 @@ if address:
             col1.image(annotated_image, caption="Annotated Image", use_container_width=True)
             # # Display cropped image
             col2.image(cropped_image, caption="Cropped Image", use_container_width=True)
+        
             
-            cropped_image_sas_url = f"{base_sas_url}cropped/{address}.png?{blob_sas_token}"
-            annotated_image_sas_url = (
-                f"{base_sas_url}annotated/{address}.png?{blob_sas_token}"
-            )
-            labels_sas_url = f"{base_sas_url}labels/{address}.txt?{blob_sas_token}"
             
 
             # Save and upload annotated image
@@ -134,9 +159,41 @@ if address:
             string = response.choices[0].message.content
             st.title("Rating: ")
             st.header(string)
+            new_data_row = {
+                "address": address,
+                "map_image_url": map_image_sas_url,
+                "annotated_image_url": annotated_image_sas_url,
+                "cropped_image_url": cropped_image_sas_url,
+                "labels": labels_sas_url,
+                "response": string,
+                "roof_detected": True,
+                "timestamp": datetime.now().isoformat(),
+                "ip_address": user_ip,
+            }
+            roof_df = pd.concat([roof_df,pd.DataFrame([new_data_row])], ignore_index=True)
+            st.dataframe(roof_df)
+            csv_buffer = StringIO()
+            roof_df.to_csv(csv_buffer, index=False)
+
+
         else:
             st.image(map_image, caption="Map Image", use_container_width=True)
             st.error("No roofs detected in the image.")
+            new_data_row = {
+                "address": address,
+                "map_image_url": map_image_sas_url,
+                "annotated_image_url": annotated_image_sas_url,
+                "cropped_image_url": cropped_image_sas_url,
+                "labels": labels_sas_url,
+                "response": '',
+                "roof_detected": False,
+                "timestamp": datetime.now().isoformat(),
+                "ip_address": user_ip,
+            }
+            roof_df = pd.concat([roof_df,pd.DataFrame([new_data_row])], ignore_index=True)
+            st.dataframe(roof_df)
+            csv_buffer = StringIO()
+            roof_df.to_csv(csv_buffer, index=False)
 
     else:
         st.error(
