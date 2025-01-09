@@ -10,7 +10,6 @@ from src.app.utils import (
     generate_chat_completion,
     upload_blob_from_memory,
     create_yolov8_labels,
-    get_client_ip
 )
 
 from io import BytesIO
@@ -55,7 +54,7 @@ with open ("prompt.txt", "r") as prompt:
 # Streamlit app title
 st.title("Roof Rate")
 
-user_ip = get_client_ip()
+
 # Address input
 address = st.text_input("Enter the address:")
 
@@ -168,7 +167,7 @@ if address:
                 "response": string,
                 "roof_detected": True,
                 "timestamp": datetime.now().isoformat(),
-                "ip_address": user_ip,
+                "ip_address": '',
             }
             roof_df = pd.concat([roof_df,pd.DataFrame([new_data_row])], ignore_index=True)
             st.dataframe(roof_df)
@@ -188,7 +187,7 @@ if address:
                 "response": '',
                 "roof_detected": False,
                 "timestamp": datetime.now().isoformat(),
-                "ip_address": user_ip,
+                "ip_address": '',
             }
             roof_df = pd.concat([roof_df,pd.DataFrame([new_data_row])], ignore_index=True)
             st.dataframe(roof_df)
