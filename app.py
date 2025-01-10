@@ -174,6 +174,12 @@ if address:
             csv_buffer = StringIO()
             roof_df.to_csv(csv_buffer, index=False)
 
+            # Upload the CSV to Blob Storage
+            try:
+                # Upload the contents of the buffer to the blob
+                blob_client.upload_blob(csv_buffer.getvalue(), overwrite=True)
+            except Exception as e:
+                print(f"Failed to upload CSV: {e}")
 
         else:
             st.image(map_image, caption="Map Image", use_container_width=True)
@@ -193,6 +199,13 @@ if address:
             st.dataframe(roof_df)
             csv_buffer = StringIO()
             roof_df.to_csv(csv_buffer, index=False)
+
+            # Upload the CSV to Blob Storage
+            try:
+                # Upload the contents of the buffer to the blob
+                blob_client.upload_blob(csv_buffer.getvalue(), overwrite=True)
+            except Exception as e:
+                print(f"Failed to upload CSV: {e}")
 
     else:
         st.error(
