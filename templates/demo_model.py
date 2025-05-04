@@ -5,11 +5,13 @@ import pandas as pd
 from io import StringIO
 from PIL import Image
 import requests
+import streamlit.components.v1 as components
 
 from azure.storage.blob import BlobClient
 from datetime import datetime
+import uuid
 
-# Import your new classes
+# Import your classes
 from src.app.roof_processing.processing import RoofImageProcessor, RoofData
 
 def show():
@@ -18,6 +20,7 @@ def show():
     base_sas_url = os.getenv("BLOB_BASE_URL")
     blob_sas_token = os.getenv("BLOB_SAS_KEY")
     roof_table_sas_url = f"{base_sas_url}table/searchs.csv?{blob_sas_token}"
+    maps_api_key = os.getenv("MAPS_API_KEY")
 
     # Read the existing CSV from Blob
     blob_client = BlobClient.from_blob_url(roof_table_sas_url)
@@ -31,12 +34,13 @@ def show():
     # Streamlit app title
     st.title("Roof Rate - Analysis")
 
-    # Address input
-    address = st.text_input("Enter the address:")
-
-    if address:
-        st.write("Processing image...")
-
+    # Create a simpler approach - just use Streamlit's text input
+    address = st.text_input("Enter address:", 
+                           help="Type an address and select from the dropdown suggestions")
+    
+    # Process button
+    if st.button("Process Address") and address:
+        
         # 1. Create a dataclass instance
         data = RoofData(address=address)
 
